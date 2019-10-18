@@ -24,24 +24,30 @@ import android.content.res.Resources;
 import android.hardware.fingerprint.FingerprintManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.SearchIndexableResource;
+import android.provider.Settings;
 import androidx.preference.SwitchPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
-import android.provider.Settings;
 
 import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
 import com.android.settings.SettingsPreferenceFragment;
+import com.derpquest.settings.preferences.CustomSeekBarPreference;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class LockScreenSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
 
     private static final String FINGERPRINT_VIB = "fingerprint_success_vib";
-
+    private static final String KEY_LOCKSCREEN_MEDIA_BLUR = "lockscreen_media_blur";
     private FingerprintManager mFingerprintManager;
     private SwitchPreference mFingerprintVib;
+    private CustomSeekBarPreference mLockscreenMediaBlur;
 
     @Override
     public void onCreate(Bundle icicle) {
@@ -50,6 +56,12 @@ public class LockScreenSettings extends SettingsPreferenceFragment implements
         addPreferencesFromResource(R.xml.derpquest_settings_lockscreen);
         final PreferenceScreen prefScreen = getPreferenceScreen();
         Resources resources = getResources();
+
+        mLockscreenMediaBlur = (CustomSeekBarPreference) findPreference(KEY_LOCKSCREEN_MEDIA_BLUR);
+        int value = Settings.System.getInt(getContentResolver(),
+                Settings.System.LOCKSCREEN_MEDIA_BLUR, 25);
+        mLockscreenMediaBlur.setValue(value);
+        mLockscreenMediaBlur.setOnPreferenceChangeListener(this);
 
         mFingerprintManager = (FingerprintManager) getActivity().getSystemService(Context.FINGERPRINT_SERVICE);
         mFingerprintVib = (SwitchPreference) findPreference(FINGERPRINT_VIB);
@@ -62,12 +74,19 @@ public class LockScreenSettings extends SettingsPreferenceFragment implements
         }
     }
 
+    @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         ContentResolver resolver = getActivity().getContentResolver();
         if (preference == mFingerprintVib) {
             boolean value = (Boolean) newValue;
             Settings.System.putInt(getActivity().getContentResolver(),
                     Settings.System.FINGERPRINT_SUCCESS_VIB, value ? 1 : 0);
+            return true;
+        }
+        if (preference == mLockscreenMediaBlur) {
+            int value = (Integer) newValue;
+            Settings.System.putInt(getContentResolver(),
+                    Settings.System.LOCKSCREEN_MEDIA_BLUR, value);
             return true;
         }
         return false;
